@@ -1,0 +1,31 @@
+Course Type,Year,Domestic,International,Salary_Gap
+Undergraduate,2025,77000,70000,7000
+Undergraduate,2024,75000,68000,7000
+Undergraduate,2023,71000,65000,6000
+Undergraduate,2022,68000,60000,8000
+Undergraduate,2021,65000,54300,10700
+Undergraduate,2020,64700,53000,11700
+Undergraduate,2019,62600,51100,11500
+Undergraduate,2018,61000,51100,9900
+Undergraduate,2017,60000,50100,9900
+Undergraduate,2016,57900,50000,7900
+Postgraduate Coursework,2025,104700,69400,35300
+Postgraduate Coursework,2024,100000,70000,30000
+Postgraduate Coursework,2023,96600,65000,31600
+Postgraduate Coursework,2022,91600,60000,31600
+Postgraduate Coursework,2021,89700,54800,34900
+Postgraduate Coursework,2020,87400,52800,34600
+Postgraduate Coursework,2019,85300,52200,33100
+Postgraduate Coursework,2018,83300,51600,31700
+Postgraduate Coursework,2017,81000,49300,31700
+Postgraduate Coursework,2016,80000,49600,30400
+Postgraduate Research,2025,109100,100000,9100
+Postgraduate Research,2024,104400,95600,8800
+Postgraduate Research,2023,100000,92000,8000
+Postgraduate Research,2022,96000,89500,6500
+Postgraduate Research,2021,95000,86900,8100
+Postgraduate Research,2020,93000,85000,8000
+Postgraduate Research,2019,90000,83000,7000
+Postgraduate Research,2018,90000,81900,8100
+Postgraduate Research,2017,87800,79000,8800
+Postgraduate Research,2016,85000,78000,7000

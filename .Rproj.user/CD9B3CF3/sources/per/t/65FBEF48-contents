@@ -1,0 +1,208 @@
+---
+title: "Education Markdown"
+author: "Travis Nguyen"
+date: "2026-10-13"
+output: html_document
+---
+
+
+
+
+```{r library}
+library(tidyverse)
+library(readxl)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(pak)
+library(rnaturalearthhires)
+```
+
+```{r Data Excel Import}
+A <- read_excel("Student Enrollment Tab 1.xlsx", sheet = "Pivot")
+B <- read_excel("Access Rate tab 2.xlsx", sheet = "16.3")
+```
+
+
+```{r A Tyding}
+A <- A |> 
+   slice(-(1:15)) |> 
+  rename(
+    State = 1,
+    University = 2,
+    `2020` = 3,
+    `2021` = 4,
+    `2022` = 5,
+    `2023` = 6,
+    `2024` = 7
+  )
+A <-  A |> 
+  filter(!is.na(State)) |> 
+  select(-University)
+A <-  A |> 
+   mutate(
+    across(`2020`:`2024`, as.numeric),
+    Average = rowMeans(pick(`2020`:`2024`), na.rm = TRUE)
+  ) |> 
+  relocate(Average, .before = "2020") |> 
+  filter(State != "Grand Total") |> 
+  mutate(State = reorder(State, Average))
+```
+
+```{r Rank Bar Chart Tab 1}
+ggplot(A, aes(x = Average, y = reorder(State, Average))) +
+  geom_col(fill = "#2C7A7B") +
+  labs(
+    x = "Average Enrolments (2020–2024)",
+    y = NULL
+  ) +
+  theme_minimal()
+```
+
+```{r Map Insert}
+aus <- rnaturalearth::ne_states(
+  country = "Australia",
+  returnclass = "sf"
+)
+aus <- aus |>
+  filter(name %in% c(
+    "New South Wales",
+    "Victoria",
+    "Queensland",
+    "Western Australia",
+    "South Australia",
+    "Tasmania",
+    "Northern Territory",
+    "Australian Capital Territory"
+  ))
+A_map <- A |>
+  mutate(State = trimws(gsub("\u00A0", " ", State))) |>
+  filter(State != "Multi-State")
+
+aus_map <- aus |>
+  left_join(A_map, by = c("name" = "State"))
+```
+
+```{r Australian Map Tab 1}
+ggplot(aus_map) +
+  geom_sf(aes(fill = Average), colour = "white") +
+  scale_fill_gradient(
+    low = "#B8D8D8",
+    high = "#243B53",
+    name = "Average Enrolments"
+  ) +
+  theme_void()
+```
+
+
+```{r B Tyding}
+B_selected <-  B |> 
+  slice(2:4) |> 
+  select(31:60, 72:103) 
+
+years <- as.character(unlist(B_selected[2, ]))
+values <- as.numeric(unlist(B_selected[3, ]))
+
+B_long <- data.frame(
+  Year = years,
+  Access_Rate = values
+)
+B_equity <-  B_long |>
+  mutate(
+    Equity_Group = case_when(
+      row_number() %in% 1:14 ~ "First Nations",
+      row_number() %in% 15:30 ~ "Low SES by SA1",
+      row_number() %in% 31:46 ~ "Regional",
+      TRUE ~ "Remote"
+    )
+  ) |>
+  select(Equity_Group, everything())
+```
+
+```{r}
+B_equity <- B_equity |>
+  mutate(
+    Year = as.integer(substr(as.character(Year), 1, 4))
+  ) |>
+  group_by(Equity_Group, Year) |>
+  summarise(
+    Access_Rate = mean(Access_Rate, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+```{r B_heatmap Creation}
+B_heatmap <- B_equity |>
+  mutate(
+    Period = case_when(
+      Year >= 2011 & Year <= 2014 ~ "2011–2014",
+      Year >= 2015 & Year <= 2018 ~ "2015–2018",
+      Year >= 2019 & Year <= 2022 ~ "2019–2022",
+      Year >= 2023 & Year <= 2024 ~ "2023–2024"
+    )
+  ) |>
+  group_by(Equity_Group, Period) |>
+  summarise(
+    Average_Access_Rate = mean(Access_Rate, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+```{r Heatmap Chart Tab 2}
+ggplot(B_heatmap, aes(
+  x = Period,
+  y = Equity_Group,
+  fill = Average_Access_Rate
+)) +
+  geom_tile(color = "white", linewidth = 1.2) +
+  geom_text(
+    aes(label = round(Average_Access_Rate, 2)),
+    color = "#243B53",
+    size = 4
+  ) +
+  scale_fill_gradient(
+    low = "#B8D8D8",
+    high = "#243B53",
+    name = "Average\nAccess Rate"
+  ) +
+  scale_x_discrete(
+    limits = c("2011–2014", "2015–2018", "2019–2022", "2023–2024")
+  ) +
+  scale_y_discrete(
+    limits = rev(c(
+     "Remote",
+    "First Nations",
+    "Low SES by SA1",
+    "Regional"
+    ))
+  ) +
+  labs(
+    title = "Educational Access Across Equity Groups",
+    x = NULL,
+    y = NULL
+  ) +
+  coord_fixed() +
+  theme_minimal() +
+  theme(
+    plot.background = element_rect(fill = "#F7F9F9", color = NA),
+    panel.background = element_rect(fill = "#F7F9F9", color = NA),
+    panel.grid = element_blank(),
+    plot.title = element_text(
+      color = "#243B53",
+      face = "bold",
+      size = 16
+    ),
+    axis.text = element_text(color = "#243B53", size = 10),
+    legend.title = element_text(color = "#243B53"),
+    legend.text = element_text(color = "#243B53")
+  )
+```
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,8 @@
+"0","p_map <-  ggplot(aus_map) +"
+"0","  geom_sf(aes(fill = Average), colour = ""white"") +"
+"0","  scale_fill_gradient("
+"0","    low = ""#B8D8D8"","
+"0","    high = ""#243B53"","
+"0","    name = ""Average Enrolments"""
+"0","  ) +"
+"0","  theme_void()"

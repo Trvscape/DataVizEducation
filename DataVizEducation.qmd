@@ -1,0 +1,3213 @@
+---
+title: "EducationDataViz Dashboard"
+author: "Trvscape"
+
+format:
+  dashboard:
+    theme: cosmo
+    css: style.css
+    orientation: columns
+    logo: "Ŧɍνѕсɑρє_logo_trial1.png"
+    nav-buttons:
+      - icon: linkedin
+        href: "https://www.linkedin.com/in/thinh-nguyen-2541623b6/"
+      - icon: github
+        href: "https://github.com/Trvscape"
+
+editor: visual
+---
+
+```{r library}
+library(tidyverse)
+library(readxl)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(pak)
+library(rnaturalearthhires)
+library(fmsb)
+library(DT)
+library(treemap)
+library(plotly)
+library(htmlwidgets)
+library(scales)
+```
+
+
+```{r Import CSV}
+A <-  read.csv("A.csv")
+B_heatmap <- read.csv("B_heatmap.csv")
+C_dodge <- read.csv("C_dodge.csv")
+D_line <- read.csv("D_line.csv")
+E_ring <- read.csv("E_ring.csv")
+Equity_all <- read.csv("Equity_all.csv")
+G_donut_total <- read.csv("G_donut_total.csv")
+G_spider_plot <- read.csv("G_spider_plot.csv")
+H_dumbbell <- read.csv("H_dumbbell.csv")
+salary_bands <- read.csv("salary_bands.csv")
+IJK_gap <- read.csv("IJK_gap.csv")
+LMN_bubble <- read.csv("LMN_bubble.csv")
+O_tree <- read.csv("O_tree.csv")
+```
+
+
+```{r Import Table}
+t_student_number <- read.csv("Student Number.csv")
+t_employment_rate <- read.csv("Employment Rate.csv")
+t_educational_attainment <- read.csv("Educational Attainment.csv")
+t_graduate_salary <- read.csv("Graduate Salary.csv")
+```
+
+```{r Student Number Table Tab 4}
+names(t_student_number) <- c(
+  "State",
+  "5-Year Average",
+  "2020",
+  "2021",
+  "2022",
+  "2023",
+  "2024"
+)
+
+t_student <-  datatable(
+  t_student_number,
+  rownames = FALSE,
+  options = list(
+    pageLength = 10,
+    dom = "t",
+    ordering = FALSE,
+    autoWidth = TRUE,
+    columnDefs = list(
+      list(className = "dt-left", targets = 0),
+      list(className = "dt-right", targets = 1:6)
+    )
+  ),
+  class = "stripe hover compact",
+  caption = htmltools::tags$caption(
+    style = "caption-side: top; text-align: left; color: #355070; font-weight: bold;",
+    "Student Numbers by State, 2020–2024"
+  )
+) |>
+  formatRound(
+    columns = "5-Year Average",
+    digits = 0
+  ) |>
+  formatRound(
+    columns = c("2020", "2021", "2022", "2023", "2024"),
+    digits = 0,
+    mark = ","
+  ) |>
+  formatStyle(
+    names(t_student_number),
+    color = "#355070",
+    backgroundColor = "#FFFAF7",
+    borderBottom = "1px solid #E8DAD7"
+  ) |>
+  formatStyle(
+    names(t_student_number),
+    target = "row",
+    backgroundColor = styleEqual(
+      t_student_number$State,
+      rep("#FFFAF7", nrow(t_student_number))
+    )
+  )
+```
+
+```{r Employment Rate Table Tab 4}
+t_employment <- datatable(
+  t_employment_rate,
+  rownames = FALSE,
+  options = list(
+    dom = "t",
+    paging = FALSE,
+    ordering = FALSE,
+    autoWidth = TRUE
+  ),
+  colnames = c("Employment", "With", "Without")
+) %>%
+  formatRound(
+    columns = c("With", "Without"),
+    digits = 1
+  ) %>%
+  formatStyle(
+    columns = names(t_employment_rate),
+    backgroundColor = "#FFFAF7",
+    color = "#52606D"
+  ) %>%
+  formatStyle(
+    "Employment",
+    target = "row",
+    backgroundColor = styleEqual(
+      "Total Employed",
+      "#E8DAD7"
+    ),
+    fontWeight = styleEqual(
+      "Total Employed",
+      "bold"
+    )
+  ) %>%
+  htmlwidgets::prependContent(
+    htmltools::tags$style("
+      table.dataTable thead th {
+        background-color: #355070;
+        color: #FFFAF7;
+        border-bottom: 3px solid #B56576;
+      }
+      table.dataTable tbody tr:hover {
+        background-color: #F3EAF0 !important;
+      }
+    ")
+  )
+```
+
+```{r Educational Attainment Table Tab 4}
+t_attainment <- datatable(
+  t_educational_attainment,
+  rownames = FALSE,
+  colnames = c(
+    "Education Level", "NSW", "Vic", "Qld", "SA",
+    "WA", "Tas", "NT", "ACT", "Australia"
+  ),
+  options = list(
+    dom = "t",
+    paging = FALSE,
+    ordering = FALSE,
+    scrollX = TRUE,
+    autoWidth = TRUE
+  )
+) %>%
+  formatRound(
+    columns = names(t_educational_attainment)[-1],
+    digits = 1,
+    mark = ","
+  ) %>%
+  formatStyle(
+    columns = names(t_educational_attainment),
+    backgroundColor = "#FFFAF7",
+    color = "#52606D"
+  ) %>%
+  formatStyle(
+    "Aust",
+    backgroundColor = "#E8DAD7",
+    color = "#355070",
+    fontWeight = "bold"
+  ) %>%
+  htmlwidgets::prependContent(
+    htmltools::tags$style("
+      table.dataTable thead th {
+        background-color: #355070;
+        color: #FFFAF7;
+        border-bottom: 3px solid #B56576;
+      }
+      table.dataTable tbody tr:hover {
+        background-color: #F3EAF0 !important;
+      }
+    ")
+  )
+```
+
+```{r Graduate Salary Table Tab 4}
+t_salary <- datatable(
+  t_graduate_salary,
+  rownames = FALSE,
+  colnames = c(
+    "Citizenship", "Course Type",
+    "2025", "2024", "2023", "2022", "2021",
+    "2020", "2019", "2018", "2017", "2016"
+  ),
+  options = list(
+    dom = "t",
+    paging = FALSE,
+    ordering = FALSE,
+    scrollX = TRUE,
+    autoWidth = TRUE
+  )
+) %>%
+  formatCurrency(
+    columns = names(t_graduate_salary)[3:12],
+    currency = "$",
+    digits = 0,
+    mark = ",",
+    before = TRUE
+  ) %>%
+  formatStyle(
+    columns = names(t_graduate_salary)[1:2],
+    backgroundColor = "#E8DAD7",
+    color = "#355070",
+    fontWeight = "bold"
+  ) %>%
+  htmlwidgets::prependContent(
+    htmltools::tags$style("
+      table.dataTable thead th {
+        background-color: #355070;
+        color: #FFFAF7;
+        border-bottom: 3px solid #B56576;
+      }
+      table.dataTable tbody td {
+        background-color: #FFFAF7;
+        color: #52606D;
+      }
+      table.dataTable tbody tr:hover td {
+        background-color: #F3EAF0 !important;
+      }
+    ")
+  )
+```
+
+
+
+
+
+
+
+```{r Map Preparation}
+aus <- rnaturalearth::ne_states(
+  country = "Australia",
+  returnclass = "sf"
+)
+aus <- aus |>
+  filter(name %in% c(
+    "New South Wales",
+    "Victoria",
+    "Queensland",
+    "Western Australia",
+    "South Australia",
+    "Tasmania",
+    "Northern Territory",
+    "Australian Capital Territory"
+  ))
+A_map <- A |>
+  mutate(State = trimws(gsub("\u00A0", " ", State))) |>
+  filter(State != "Multi-State")
+
+aus_map <- aus |>
+  left_join(A_map, by = c("name" = "State"))
+```
+
+
+
+```{r Rank Bar Chart Tab 1 Interactive}
+A_rank <- A |>
+  filter(State != "Multi-State") |>
+  mutate(
+    State = trimws(gsub("\u00A0", " ", State)),
+    State = recode(
+      State,
+      "New South Wales" = "NSW",
+      "Victoria" = "VIC",
+      "Queensland" = "QLD",
+      "Western Australia" = "WA",
+      "South Australia" = "SA",
+      "Tasmania" = "TAS",
+      "Northern Territory" = "NT",
+      "Australian Capital Territory" = "ACT"
+    ),
+    Hover = paste0(
+      "<b>", State, "</b>",
+      "<br><span style='color:#2C7A7B'>Average Enrolments</span>",
+      "<br><b>", comma(round(Average, 0)), "</b>"
+    )
+  )
+
+p_rankbar <- ggplot(
+  A_rank,
+  aes(
+    x = Average,
+    y = reorder(State, Average),
+    text = Hover
+  )
+) +
+  geom_col(
+    aes(fill = Average),
+    width = 0.68
+  ) + 
+  scale_fill_gradientn(
+  colours = c(
+    "#EAAC8B",
+    "#E56B6F",
+    "#B56576",
+    "#6D597A",
+    "#355070"
+  ),
+  guide = "none"
+) + 
+  
+  labs(
+    x = "Average Enrolments",
+    y = NULL
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_text(
+      colour = "#355070",
+      size = 10,
+      face = "bold"
+    ),
+    axis.text.x = element_text(
+      colour = "#6D597A",
+      size = 9
+    ),
+    axis.title.x = element_text(
+      colour = "#355070",
+      size = 10,
+      face = "bold"
+    ),
+    plot.background = element_rect(
+      fill = "#FFFAF7",
+      colour = NA
+    ),
+    panel.background = element_rect(
+      fill = "#FFFAF7",
+      colour = NA
+    )
+  )
+
+p_rankbar_plotly <- ggplotly(
+  p_rankbar,
+  tooltip = "text",
+  width = NULL,
+  height = NULL
+) |>
+  layout(
+    title = list(
+      text = paste0(
+        "<b>State Enrolment Ranking</b>",
+        "<br><sup>Comparing average enrolments across 2020–2024</sup>"
+      ),
+      x = 0,
+      xanchor = "left",
+      font = list(
+        family = "Arial",
+        size = 17,
+        color = "#355070"
+      )
+    ),
+    hoverlabel = list(
+      bgcolor = "#F7F9F9",
+      bordercolor = "#2C7A7B",
+      font = list(
+        family = "Arial",
+        size = 13,
+        color = "#355070"
+      ),
+      namelength = 0,
+      align = "left"
+    ),
+    margin = list(
+      t = 80,
+      b = 45,
+      l = 60,
+      r = 15
+    ),
+    autosize = TRUE,
+    xaxis = list(
+      title = "Average Enrolments (2020–2024)",
+      gridcolor = "#E1E9E9",
+      zeroline = FALSE
+    ),
+    yaxis = list(
+      title = "",
+      automargin = TRUE
+    ),
+    plot_bgcolor = "#F7F9F9",
+    paper_bgcolor = "#F7F9F9"
+  )
+
+p_rankbar_plotly <- htmlwidgets::onRender(
+  p_rankbar_plotly,
+  "
+  function(el, x) {
+    const gd = el;
+
+    function getBars() {
+      return Array.from(
+        gd.querySelectorAll('.barlayer .point')
+      );
+    }
+
+    function resetBars() {
+      getBars().forEach(bar => {
+        bar.style.transition =
+          'filter 350ms ease, opacity 350ms ease, transform 350ms ease';
+        bar.style.filter = '';
+        bar.style.opacity = '1';
+        bar.style.transform = '';
+        bar.style.transformBox = 'fill-box';
+        bar.style.transformOrigin = 'center';
+      });
+    }
+
+    gd.on('plotly_hover', function(event) {
+      const point = event.points && event.points[0];
+      if (!point) return;
+
+      const bars = getBars();
+
+      // Match the hovered bar using its actual SVG position
+      const hoveredY = point.y;
+
+      bars.forEach(bar => {
+        const box = bar.getBoundingClientRect();
+        const barY = box.top + box.height / 2;
+
+        bar.style.transition =
+          'filter 350ms ease, opacity 350ms ease, transform 350ms ease';
+        bar.style.transformBox = 'fill-box';
+        bar.style.transformOrigin = 'center';
+
+        // Use Plotly's hovered point to identify the bar
+        const isSelected =
+          Math.abs(barY - event.event.clientY) < box.height / 2 + 8;
+
+        if (isSelected) {
+          bar.style.opacity = '1';
+          bar.style.filter =
+            'brightness(1.2) drop-shadow(0 0 5px rgba(181, 101, 118, 0.55))';
+          bar.style.transform = 'scale(1.025)';
+        } else {
+          bar.style.opacity = '0.35';
+          bar.style.filter = '';
+          bar.style.transform = '';
+        }
+      });
+    });
+
+    gd.on('plotly_unhover', resetBars);
+  }
+  "
+)
+```
+
+
+
+```{r Australian Map Tab 1 Creation}
+p_map <- ggplot(aus_map) +
+  
+  labs(
+    title = "Average Student Enrolments by State",
+    subtitle = "Data across 2020–2024",
+    fill = "Average Enrolments" ) +
+  
+  geom_sf(
+    aes(
+      fill = Average,
+      text = paste0(
+        "<b>", name, "</b>",
+        "<br><span style='color:#6D597A'>Average Enrolments</span>",
+        "<br><b>",
+        scales::comma(round(Average, 0)),
+        "</b>"
+      )
+    ),
+    colour = "white",
+    linewidth = 0.3
+  ) +
+  scale_fill_gradientn(
+    colours = c(
+      "#EAAC8B", "#E56B6F", "#B56576",
+      "#6D597A", "#355070"
+    ),
+    name = "Average Enrolments",
+    na.value = "#EAE4E3",
+    labels = scales::label_comma(),
+    guide = guide_colorbar(
+      barheight = grid::unit(35, "mm"),
+      barwidth = grid::unit(5, "mm"),
+      ticks = FALSE,
+      frame.colour = "#F7F9F9",
+      title.position = "top",
+      title.hjust = 0.5,
+      label.position = "right"
+    )
+  ) +
+  theme_void() +
+  theme(
+    legend.position = "right",
+    legend.title = element_text(
+      colour = "#355070",
+      size = 10,
+      face = "bold"
+    ),
+    legend.text = element_text(
+      colour = "#355070",
+      size = 9
+    ),
+    legend.background = element_rect(
+      fill = "#F7F9F9",
+      colour = NA
+    ),
+    legend.margin = margin(8, 8, 8, 8),
+    plot.title = element_text(
+  colour = "#355070",
+  size = 16,
+  face = "bold",
+  hjust = 0
+),
+plot.subtitle = element_text(
+  colour = "#6D597A",
+  size = 10,
+  hjust = 0
+),
+plot.caption = element_text(
+  colour = "#6D597A",
+  size = 8,
+  hjust = 1
+)
+  )
+
+```
+
+```{r Australian Map Tab 1 Interactive}
+p_map_plotly <- ggplotly(
+  p_map,
+  tooltip = "text"
+) |>
+  layout(
+   hoverlabel = list(
+  bgcolor = "#FFFAF7",
+  bordercolor = "#B56576",
+  font = list(
+    family = "Arial",
+    size = 13,
+    color = "#355070"
+  ),
+  namelength = 0,
+  align = "left"
+)
+  )
+
+for (i in seq_along(p_map_plotly$x$data)) {
+  if (identical(p_map_plotly$x$data[[i]]$fill, "toself")) {
+    p_map_plotly$x$data[[i]]$hoveron <- "fills"
+  }
+}
+
+p_map_plotly <- htmlwidgets::onRender(
+  p_map_plotly,
+  
+  "
+function(el, x) {
+  const gd = el;
+  const stateTraces = [];
+
+  gd.data.forEach((trace, i) => {
+    if (trace.fill === 'toself' && trace.hoverinfo === 'text') {
+      stateTraces.push(i);
+      trace.opacity = 1;
+    }
+  });
+
+  const originalOpacity = stateTraces.map(() => 1);
+  let currentState = null;
+  let animationFrame = null;
+
+  // Chuyển opacity mượt bằng requestAnimationFrame
+  function animateOpacity(selected) {
+    if (animationFrame) cancelAnimationFrame(animationFrame);
+
+    const duration = 600;
+    const startTime = performance.now();
+
+    const paths = stateTraces.map(i => {
+      const traceElement = gd.querySelectorAll(
+        '.scatterlayer .trace'
+      )[i];
+
+      return traceElement ? traceElement.querySelectorAll('path') : [];
+    });
+
+    const startValues = paths.map((pathList, index) => {
+      const target = stateTraces[index] === selected ? 1 : 0.25;
+      const path = pathList[0];
+      const current = path ? parseFloat(getComputedStyle(path).opacity) : 1;
+      return Number.isFinite(current) ? current : target;
+    });
+
+    function step(now) {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const eased = progress * progress * (3 - 2 * progress);
+
+      paths.forEach((pathList, index) => {
+        const target = stateTraces[index] === selected ? 1 : 0.25;
+        const opacity = startValues[index] +
+          (target - startValues[index]) * eased;
+
+        pathList.forEach(path => {
+          path.style.opacity = opacity;
+        });
+      });
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(step);
+      } else {
+        animationFrame = null;
+      }
+    }
+
+    animationFrame = requestAnimationFrame(step);
+  }
+
+  function resetMap() {
+    currentState = null;
+
+    if (animationFrame) cancelAnimationFrame(animationFrame);
+    animationFrame = null;
+
+    gd.querySelectorAll('.scatterlayer .trace path').forEach(path => {
+      path.style.opacity = '';
+      path.style.filter = '';
+    });
+
+    Plotly.restyle(gd, {opacity: originalOpacity}, stateTraces);
+  }
+
+  gd.on('plotly_hover', function(event) {
+    const point = event.points && event.points[0];
+
+    if (!point || !stateTraces.includes(point.curveNumber)) return;
+
+    const selected = point.curveNumber;
+    if (currentState === selected) return;
+    currentState = selected;
+
+    animateOpacity(selected);
+
+    const traceElement = gd.querySelectorAll(
+      '.scatterlayer .trace'
+    )[selected];
+
+    if (traceElement) {
+      traceElement.querySelectorAll('path').forEach(path => {
+        path.style.filter =
+          'brightness(1.2) drop-shadow(0 0 5px rgba(181, 101, 118, 0.8))';
+      });
+    }
+  });
+
+  gd.on('plotly_unhover', resetMap);
+}
+"
+  
+)
+
+```
+
+
+
+```{r Treemap Chart Tab 1 Interactive}
+#| echo: false
+O_tree_plot <- O_tree |>
+  mutate(
+    Country = trimws(gsub("\u00A0", " ", Country)),
+    Students = Students.commencing.or.continuing.study.in.2025,
+    LabelSize = scales::rescale(
+      sqrt(Students),
+      to = c(10, 27)
+    ),
+    
+   Label = ifelse(
+  Students >= 7000,
+  paste0(
+    "<span style='font-size:",
+    round(LabelSize), "px'><b>", Country, "</b></span>"
+  ),
+  ""
+),
+
+    Hover = paste0(
+      "<b>", Country, "</b>",
+      "<br><span style='color:#EAAC8B'>International students</span>",
+      "<br><b>", comma(Students), "</b>"
+    )
+  )
+
+berry <- c("#EAAC8B", "#E56B6F", "#B56576", "#6D597A", "#355070")
+
+p_tree <- plot_ly(
+  data = O_tree_plot,
+  type = "treemap",
+  labels = ~Country,
+  parents = "",
+  values = ~Students,
+  text = ~Label,
+  textinfo = "text",
+  textfont = list(
+    family = "Arial",
+    color = "#FFFFFF"
+  ),
+  marker = list(
+    colors = rep(berry, length.out = nrow(O_tree_plot)),
+    line = list(color = "#F7F9F9", width = 3)
+  ),
+  customdata = ~Hover,
+  hovertemplate = "%{customdata}<extra></extra>",
+  tiling = list(pad = 3),
+  pathbar = list(visible = FALSE)
+) |>
+  layout(
+    paper_bgcolor = "#FFFAF7",
+    plot_bgcolor = "#FFFAF7",
+    margin = list(l = 3, r = 3, t = 3, b = 3),
+    uniformtext = list(minsize = 9, mode = "hide"),
+    hoverlabel = list(
+      bgcolor = "#355070",
+      bordercolor = "#B56576",
+      font = list(
+        family = "Arial",
+        size = 13,
+        color = "#FFFFFF"
+      )
+    )
+  ) |>
+  
+htmlwidgets::onRender("
+function(el, x) {
+  const gd = el;
+  const palette = [
+    '#EAAC8B',
+    '#E56B6F',
+    '#B56576',
+    '#6D597A',
+    '#355070'
+  ];
+
+  function getTiles() {
+    return Array.from(
+      gd.querySelectorAll('.treemaplayer .trace .slice')
+    );
+  }
+
+  function getTileColor(tile) {
+    const path = tile.querySelector('path');
+    return path
+      ? getComputedStyle(path).fill.toLowerCase()
+      : '';
+  }
+
+  function resetTiles() {
+    getTiles().forEach(tile => {
+      tile.style.transition =
+        'filter 650ms cubic-bezier(0.22, 1, 0.36, 1), opacity 650ms ease';
+      tile.style.filter = '';
+      tile.style.opacity = '1';
+    });
+  }
+
+  gd.on('plotly_hover', function(event) {
+    const point = event.points && event.points[0];
+    if (!point) return;
+
+    const tiles = getTiles();
+    const selectedTile = tiles[point.pointNumber];
+    if (!selectedTile) return;
+
+    const selectedColor = getTileColor(selectedTile);
+
+    tiles.forEach(tile => {
+      tile.style.transition =
+        'filter 650ms cubic-bezier(0.22, 1, 0.36, 1), opacity 650ms ease';
+
+      const sameColor = getTileColor(tile) === selectedColor;
+
+      if (sameColor) {
+        tile.style.opacity = '1';
+        tile.style.filter =
+          'brightness(1.22) drop-shadow(0 0 5px rgba(181,101,118,0.65))';
+      } else {
+        tile.style.opacity = '0.72';
+        tile.style.filter = '';
+      }
+    });
+  });
+
+  gd.on('plotly_unhover', resetTiles);
+}
+")
+
+```
+
+
+
+```{r Dodge Bar Chart Tab 2 Interactive}
+C_dodge_plot <- C_dodge |>
+  mutate(
+    Period = trimws(as.character(Period)),
+    Equity_Group = as.character(Equity_Group)
+  ) |>
+  group_by(Period) |>
+  mutate(Period_Avg = mean(Average_Participation, na.rm = TRUE)) |>
+  ungroup() |>
+  mutate(
+    Period = factor(
+      Period,
+      levels = unique(
+        Period[order(Period_Avg)]
+      )
+    ),
+    Hover = paste0(
+      "<b>", Equity_Group, "</b>",
+      "<br>Period: ", Period,
+      "<br>Average Participation: ",
+      round(Average_Participation, 2), "%"
+    )
+  )
+
+# Muted Berry palette
+group_colors <- c(
+  "Remote" = "#EAAC8B",
+  "Regional" = "#E56B6F",
+  "First Nations" = "#B56576",
+  "Low SES by SA1" = "#355070"
+)
+
+p_dodge <- ggplot(
+  C_dodge_plot,
+  aes(
+    x = Period,
+    y = Average_Participation,
+    fill = Equity_Group,
+    text = Hover
+  )
+) +
+  geom_col(
+    position = position_dodge(width = 0.82),
+    width = 0.72,
+    colour = "#F7F9F9",
+    linewidth = 0.35
+  ) +
+  geom_text(
+    aes(
+      label = round(Average_Participation, 1)
+    ),
+    position = position_dodge(width = 0.82),
+    vjust = -0.45,
+    size = 3.2,
+    colour = "#355070",
+    fontface = "bold",
+    show.legend = FALSE
+  ) +
+  scale_fill_manual(values = group_colors) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.14)),
+    labels = label_number(accuracy = 0.1)
+  ) +
+  labs(
+    x = "Period",
+    y = "Average Participation Rate",
+    fill = "Equity Group"
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(
+  # Nền sáng ấm, bớt nhợt
+  plot.background = element_rect(
+    fill = "#FFF5F0", colour = NA
+  ),
+  panel.background = element_rect(
+    fill = "#FFF5F0", colour = NA
+  ),
+
+  # Thu nhỏ chữ trục X và Y
+  axis.text.x = element_text(
+    colour = "#6D597A", size = 8
+  ),
+  axis.text.y = element_text(
+    colour = "#6D597A", size = 8
+  ),
+
+  # Chữ tiêu đề trục nhỏ hơn
+  axis.title.x = element_text(
+    colour = "#355070", size = 9, face = "bold"
+  ),
+  axis.title.y = element_text(
+    colour = "#355070", size = 9, face = "bold"
+  ),
+
+  # Grid nhẹ nhưng vẫn rõ
+  panel.grid.major.x = element_blank(),
+  panel.grid.major.y = element_line(
+    colour = "#E8DAD7", linewidth = 0.4
+  ),
+  panel.grid.minor = element_blank(),
+
+  # Legend
+  legend.title = element_text(
+    colour = "#355070", size = 9, face = "bold"
+  ),
+  legend.text = element_text(
+    colour = "#6D597A", size = 8
+  ),
+
+  plot.margin = margin(10, 12, 10, 12)
+)
+
+# Convert to Plotly for interactive hover
+p_dodge_plotly <- ggplotly(
+  p_dodge,
+  tooltip = "text"
+) |>
+  layout(
+    autosize = TRUE,
+    paper_bgcolor = "#FFFAF7",
+    plot_bgcolor = "#FFFAF7",
+    height = 350,
+    margin = list(l = 55, r = 15, t = 20, b = 55),
+    hoverlabel = list(
+      bgcolor = "#355070",
+      bordercolor = "#B56576",
+      font = list(
+        family = "Arial",
+        size = 12,
+        color = "#FFFFFF"
+      )
+    )
+  ) |>
+  htmlwidgets::onRender("
+    function(el, x) {
+      const gd = el;
+
+      function getTraces() {
+        return Array.from(
+          gd.querySelectorAll('.barlayer .trace')
+        );
+      }
+
+      function resetBars() {
+        getTraces().forEach(trace => {
+          trace.querySelectorAll('.point').forEach(bar => {
+            bar.style.transition =
+              'filter 500ms ease, opacity 500ms ease, transform 500ms ease';
+            bar.style.filter = '';
+            bar.style.opacity = '1';
+            bar.style.transform = '';
+            bar.style.transformBox = 'fill-box';
+            bar.style.transformOrigin = 'center';
+          });
+        });
+      }
+
+      gd.on('plotly_hover', function(event) {
+        const point = event.points && event.points[0];
+        if (!point) return;
+
+        const traces = getTraces();
+
+        traces.forEach((trace, traceIndex) => {
+          trace.querySelectorAll('.point').forEach(bar => {
+            bar.style.transition =
+              'filter 500ms ease, opacity 500ms ease, transform 500ms ease';
+            bar.style.transformBox = 'fill-box';
+            bar.style.transformOrigin = 'center';
+
+            if (traceIndex === point.curveNumber) {
+              bar.style.opacity = '1';
+              bar.style.filter =
+                'brightness(1.18) drop-shadow(0 0 5px rgba(181,101,118,0.65))';
+              bar.style.transform = 'scale(1.025)';
+            } else {
+              bar.style.opacity = '0.25';
+              bar.style.filter = '';
+              bar.style.transform = '';
+            }
+          });
+        });
+      });
+
+      gd.on('plotly_unhover', resetBars);
+    }
+  ")
+```
+
+
+
+```{r Heatmap Chart Tab 2}
+p_heat <- ggplot(B_heatmap, aes(
+  x = Period,
+  y = Equity_Group,
+  fill = Average_Access_Rate
+)) +
+  geom_tile(
+    aes(text = paste0(
+      "<b>", Equity_Group, "</b>",
+      "<br>Period: ", Period,
+      "<br>Average access rate: ",
+      round(Average_Access_Rate, 2), "%"
+    )),
+    color = "#FFF5F0",
+    linewidth = 2,
+    width = 0.90,
+    height = 0.82
+  ) +
+  geom_text(
+    aes(
+      label = sprintf("%.1f%%", Average_Access_Rate),
+      colour = Average_Access_Rate >=
+        mean(B_heatmap$Average_Access_Rate, na.rm = TRUE)
+    ),
+    fontface = "bold",
+    size = 4
+  ) +
+ scale_fill_gradient(
+  low = "#E8D4D8",
+  high = "#B56576",
+  name = "Access rate",
+  guide = guide_colorbar(
+    barheight = grid::unit(28, "mm"),
+    barwidth = grid::unit(4, "mm"),
+    ticks = FALSE,
+    frame.colour = NA,
+    title.position = "top",
+    title.hjust = 0.5
+  )
+) +
+  scale_colour_manual(
+    values = c(
+      "TRUE" = "#FFFFFF",
+      "FALSE" = "#355070"
+    ),
+    guide = "none"
+  ) +
+  scale_x_discrete(
+    limits = c(
+      "2011–2014", "2015–2018",
+      "2019–2022", "2023–2024"
+    ),
+    expand = expansion(add = 0.08)
+  ) +
+  scale_y_discrete(
+    limits = rev(c(
+      "Remote",
+      "First Nations",
+      "Low SES by SA1",
+      "Regional"
+    )),
+    expand = expansion(add = 0.08)
+  ) +
+  labs(
+    title = "Educational Access Across Equity Groups",
+    x = NULL,
+    y = NULL
+  ) +
+    coord_fixed() +
+  theme_minimal(base_size = 10) +
+  theme(
+    plot.background = element_rect(
+      fill = "#FFFAF7", colour = NA
+    ),
+    panel.background = element_rect(
+      fill = "#FFFAF7", colour = NA
+    ),
+    panel.grid = element_blank(),
+    plot.title = element_text(
+      colour = "#355070",
+      face = "bold",
+      size = 14,
+      margin = margin(b = 14)
+    ),
+    axis.text.x = element_text(
+      colour = "#355070",
+      size = 9,
+      face = "bold",
+      margin = margin(t = 8)
+    ),
+    axis.text.y = element_text(
+      colour = "#6D597A",
+      size = 9,
+      face = "bold",
+      margin = margin(r = 8)
+    ),
+    axis.ticks = element_blank(),
+    legend.position = "right",
+    legend.title = element_text(
+      colour = "#355070",
+      size = 9,
+      face = "bold"
+    ),
+    legend.text = element_text(
+      colour = "#6D597A",
+      size = 8
+    ),
+    plot.margin = margin(10, 12, 10, 12)
+  )
+
+p_heat_plotly <- ggplotly(
+  p_heat,
+  tooltip = "text"
+) |>
+  layout(
+        autosize = TRUE,
+    paper_bgcolor = "#FFFAF7",
+    plot_bgcolor = "#FFFAF7",
+    hoverlabel = list(
+      bgcolor = "#355070",
+      bordercolor = "#B56576",
+      font = list(
+        family = "Arial",
+        size = 12,
+        color = "#FFFFFF"
+      )
+    )
+  )
+```
+
+
+
+```{r Line Chart Tab 2}
+p_line <- ggplot(D_line, aes(
+  x = Year,
+  y = Retention_Rate,
+  color = Equity_Group,
+  group = Equity_Group
+)) +
+  geom_line(linewidth = 0.85, alpha = 0.6) +
+  geom_point(
+    aes(group = Equity_Group),
+    color = "#B56576",
+    size = 1.6
+  ) +
+  scale_x_continuous(
+    breaks = 2011:2023,
+    expand = expansion(mult = c(0.02, 0.02))
+  ) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0.05, 0.08))
+  ) +
+  scale_color_manual(
+    values = c(
+      "First Nations" = "#355070",
+      "Low SES by SA1" = "#8F5D9B",
+      "Regional" = "#C04F78",
+      "Remote" = "#E56B45"
+    )
+  ) +
+  guides(
+    color = guide_legend(
+      override.aes = list(
+        linetype = 0,
+        shape = 16,
+        size = 3.5
+      )
+    )
+  ) +
+  labs(
+    x = NULL,
+    y = "Retention rate (%)",
+    color = NULL
+  ) +
+  theme_classic(base_size = 11) +
+  theme(
+    plot.background = element_rect(
+      fill = "#FFFAF7", colour = NA
+    ),
+    panel.background = element_rect(
+      fill = "#FFFAF7", colour = NA
+    ),
+    axis.line = element_line(
+      color = "#D8C7C3", linewidth = 0.35
+    ),
+    axis.ticks = element_line(
+      color = "#D8C7C3", linewidth = 0.35
+    ),
+    axis.title.y = element_text(
+      color = "#355070", face = "bold", size = 10
+    ),
+    axis.text = element_text(
+      color = "#355070", size = 9
+    ),
+    legend.position = "bottom",
+    legend.box.margin = margin(t = -5),
+legend.margin = margin(t = 0),
+    legend.text = element_text(
+      color = "#355070", size = 9
+    ),
+    legend.key = element_rect(
+      fill = "#FFFAF7", color = NA
+    ),
+    legend.background = element_rect(
+      fill = "#FFFAF7", color = NA
+    ),
+    legend.spacing.x = grid::unit(0.35, "cm"),
+    legend.key.width = grid::unit(0.4, "cm")
+  )
+
+p_line_plotly <- ggplotly(
+  p_line,
+  tooltip = c("x", "y")
+) |>
+   layout(
+    autosize = TRUE,
+    paper_bgcolor = "#FFFAF7",
+    plot_bgcolor = "#FFFAF7",
+    title = list(
+      text = paste0(
+        "Educational Retention Trends",
+        "<br><sup>Retention rates across equity groups, 2011–2023</sup>"
+      ),
+      x = 0.02,
+      xanchor = "left",
+      font = list(
+        family = "Arial",
+        size = 16,
+        color = "#355070"
+      ),
+      y = 0.94,
+      yanchor = "top"
+    ),
+    margin = list(
+      t = 85,
+      b = 45
+    ),
+    hoverlabel = list(
+      bgcolor = "#355070",
+      bordercolor = "#B56576",
+      font = list(
+        family = "Arial",
+        size = 12,
+        color = "#FFFFFF"
+      )
+    )
+  )
+
+p_line_plotly <- htmlwidgets::onRender(
+  p_line_plotly,
+  '
+  function(el, x) {
+    const gd = el;
+
+    function getTraces() {
+      return gd.querySelectorAll(".scatterlayer .trace");
+    }
+
+    function resetChart() {
+      getTraces().forEach(function(trace) {
+        trace.style.transition =
+          "opacity 250ms ease, filter 250ms ease";
+        trace.style.opacity = "1";
+        trace.style.filter = "none";
+      });
+    }
+
+    function highlightTrace(activeTrace) {
+      getTraces().forEach(function(trace) {
+        trace.style.transition =
+          "opacity 250ms ease, filter 250ms ease";
+
+        if (trace === activeTrace) {
+          trace.style.opacity = "1";
+          trace.style.filter =
+            "drop-shadow(0 0 3px rgba(181,101,118,0.55))";
+        } else {
+          trace.style.opacity = "0.15";
+          trace.style.filter = "none";
+        }
+      });
+    }
+
+    function bindLineHover() {
+      getTraces().forEach(function(trace) {
+        const lines = trace.querySelectorAll(".js-line");
+
+        lines.forEach(function(line) {
+          line.style.pointerEvents = "stroke";
+          line.style.cursor = "pointer";
+
+          line.addEventListener("mouseenter", function() {
+            highlightTrace(trace);
+          });
+
+          line.addEventListener("mouseleave", function() {
+            resetChart();
+          });
+        });
+      });
+    }
+
+    gd.on("plotly_afterplot", bindLineHover);
+
+    gd.on("plotly_hover", function(eventData) {
+      if (!eventData.points || !eventData.points.length) return;
+
+      const index = eventData.points[0].curveNumber;
+      const traces = getTraces();
+
+      if (traces[index]) {
+        highlightTrace(traces[index]);
+      }
+    });
+
+    gd.on("plotly_unhover", resetChart);
+
+    bindLineHover();
+  }
+  '
+)
+```
+
+
+
+```{r Apple Watch Chart Tab 2}
+p_ring <- E_ring |>
+  ggplot() +
+  geom_rect(
+    aes(
+      xmin = ring + 0.2,
+      xmax = ring + 1,
+      ymin = 0,
+      ymax = value,
+      fill = label
+    ),
+    color = "#FFF5F0",
+    linewidth = 1.1
+  ) +
+  coord_polar(theta = "y") +
+  ylim(0, 35) +
+  xlim(0, 5) +
+  scale_fill_manual(
+    values = c(
+      "#355070",
+      "#6D597A",
+      "#B56576",
+      "#E56B6F",
+      "#EAAC8B"
+    )
+  ) +
+  guides(
+    fill = guide_legend(
+      override.aes = list(
+        shape = 16,
+        size = 4,
+        alpha = 1
+      )
+    )
+  ) +
+  labs(fill = NULL) +
+  theme_void() +
+  theme(
+    plot.background = element_rect(
+      fill = "#FFF5F0", colour = NA
+    ),
+    panel.background = element_rect(
+      fill = "#FFF5F0", colour = NA
+    ),
+    legend.position = "right",
+    legend.text = element_text(
+      size = 10,
+      colour = "#355070"
+    ),
+    legend.key = element_rect(
+      fill = "#FFF5F0", colour = NA
+    ),
+    legend.background = element_rect(
+      fill = "#FFF5F0", colour = NA
+    ),
+    legend.spacing.y = grid::unit(0.35, "cm"),
+    legend.key.height = grid::unit(0.35, "cm")
+  )
+
+```
+
+
+
+```{r Colored Table Tab 2}
+p_table <- datatable(
+  Equity_all,
+  options = list(
+    pageLength = 10,
+    autoWidth = FALSE
+  ),
+  rownames = FALSE
+) |>
+  formatStyle(
+    "Equity_Group",
+    backgroundColor = styleEqual(
+      c("First Nations", "Low SES by SA1", "Regional", "Remote"),
+      c("#355070", "#6D597A", "#B56576", "#E56B6F")
+    ),
+    color = "#FFFFFF",
+    fontWeight = "bold"
+  ) |>
+  formatStyle(
+    "Access_Rate",
+    backgroundColor = styleInterval(
+      quantile(
+        Equity_all$Access_Rate,
+        probs = c(0.2, 0.4, 0.6, 0.8),
+        na.rm = TRUE
+      ),
+      c("#FFFAF7", "#F5E5E5", "#E8C5CF", "#D18BA0", "#8F4D68")
+    )
+  ) |>
+  formatStyle(
+    "Participation_Rate",
+    backgroundColor = styleInterval(
+      quantile(
+        Equity_all$Participation_Rate,
+        probs = c(0.2, 0.4, 0.6, 0.8),
+        na.rm = TRUE
+      ),
+      c("#FFFAF7", "#F3EAF5", "#DCCBE5", "#AA8DBB", "#6D597A")
+    )
+  ) |>
+  formatStyle(
+    "Retention_Rate",
+    backgroundColor = styleInterval(
+      quantile(
+        Equity_all$Retention_Rate,
+        probs = c(0.2, 0.4, 0.6, 0.8),
+        na.rm = TRUE
+      ),
+      c("#FFFAF7", "#F8E9E3", "#F0C9B8", "#D9957F", "#B56576")
+    )
+  ) |>
+  formatStyle(
+    "Success_Rate",
+    backgroundColor = styleInterval(
+      quantile(
+        Equity_all$Success_Rate,
+        probs = c(0.2, 0.4, 0.6, 0.8),
+        na.rm = TRUE
+      ),
+      c("#FFFAF7", "#E8EDF3", "#C2CEDD", "#8297B2", "#355070")
+    )
+  )
+```
+
+
+```{r Donut Chart Interactive}
+#| echo: false
+names(G_donut_total)[1] <- "Education"
+
+donut_data <- G_donut_total  %>%
+  arrange(Percentage)
+
+
+berry_colors <- c(
+  "#355070", "#6D597A", "#B56576",
+  "#E56B6F", "#EAAC8B", "#52606D",
+  "#C9A7B0", "#8D6E83", "#D9B8A7"
+)
+
+
+p_donut_plotly <- plot_ly(
+  data = donut_data,
+  labels = ~Education,
+values = ~Percentage,
+  type = "pie",
+  hole = 0.58,
+  sort = FALSE,
+  text = ~paste0(round(Percentage, 1), "%"),
+  textinfo = "text",
+  textposition = "inside",
+  textfont = list(
+    color = "#FFFAF7",
+    size = 13
+  ),
+  marker = list(
+    colors = berry_colors[seq_len(nrow(donut_data))],
+    line = list(
+      color = "#FFFAF7",
+      width = 3
+    )
+  ),
+  hovertemplate = paste(
+    "<b>%{label}</b><br>",
+    "%{value:.1f}%<extra></extra>"
+  )
+) %>%
+  layout(
+    showlegend = TRUE,
+    legend = list(
+      title = list(text = "Education level"),
+      font = list(
+        size = 12,
+        color = "#52606D"
+      )
+    ),
+    paper_bgcolor = "rgba(0,0,0,0)",
+    plot_bgcolor = "rgba(0,0,0,0)",
+    margin = list(l = 10, r = 10, t = 10, b = 10)
+  ) %>%
+  htmlwidgets::onRender("
+    function(el, x) {
+      var gd = el;
+
+      function resetSlices() {
+        var slices = gd.querySelectorAll('.slice');
+        slices.forEach(function(slice) {
+          slice.style.opacity = '1';
+          slice.style.filter = 'none';
+          slice.style.transition = 'all 0.2s ease';
+        });
+      }
+
+      gd.on('plotly_hover', function(e) {
+        if (!e.points || !e.points.length) return;
+
+        var selected = e.points[0].pointNumber;
+        var slices = gd.querySelectorAll('.slice');
+
+        slices.forEach(function(slice, i) {
+          slice.style.transition = 'all 0.2s ease';
+
+          if (i === selected) {
+            slice.style.opacity = '1';
+            slice.style.filter =
+              'drop-shadow(0px 0px 7px rgba(181,101,118,0.9))';
+          } else {
+            slice.style.opacity = '0.22';
+            slice.style.filter = 'none';
+          }
+        });
+      });
+
+      gd.on('plotly_unhover', resetSlices);
+    }
+  ")
+```
+
+
+
+```{r Spider Chart Tab 4}
+#| echo: false
+G_spider_plot <- G_spider_plot[, names(G_spider_plot) != "X",
+                               drop = FALSE]
+
+# Sort states by actual values, highest to lowest
+state_order <- order(
+  as.numeric(G_spider_plot[3, ]),
+  decreasing = TRUE
+)
+
+G_spider_plot <- G_spider_plot[, state_order, drop = FALSE]
+
+par(cex.axis = 0.6)
+
+```
+
+
+
+
+
+```{r Dumbell Chart Tab 3}
+p_dumbbell <- ggplot(
+  H_dumbbell,
+  aes(y = Employment)
+) +
+  geom_segment(
+    aes(x = Without, xend = With, yend = Employment),
+    color = "#C4A7B5",
+    linewidth = 1.2
+  ) +
+  geom_point(
+  aes(
+    x = With,
+    color = "With qualification",
+    text = paste0(
+      "<b>", Employment, "</b>",
+      "<br>Group: With qualification",
+      "<br>Proportion: ", sprintf("%.1f%%", With)
+    )
+  ),
+  size = 3
+) +
+geom_point(
+  aes(
+    x = Without,
+    color = "Without qualification",
+    text = paste0(
+      "<b>", Employment, "</b>",
+      "<br>Group: Without qualification",
+      "<br>Proportion: ", sprintf("%.1f%%", Without)
+    )
+  ),
+  size = 3
+) +
+  scale_color_manual(
+    values = c(
+      "With qualification" = "#665477",
+      "Without qualification" = "#E56B6F"
+    )
+  ) +
+  scale_x_continuous(
+    name = "Proportion (%)",
+    breaks = seq(0, 100, 20),
+    limits = c(0, 100),
+    expand = expansion(mult = c(0.01, 0.03))
+  ) +
+  labs(
+    title = "Employment Outcomes by Educational Attainment",
+    subtitle = "With vs without a non-school qualification",
+    y = NULL,
+    color = NULL
+  ) +
+  theme_minimal() +
+  theme(
+    plot.background = element_rect(
+      fill = "#FFFAF7",
+      color = NA
+    ),
+    panel.background = element_rect(
+      fill = "#FFFAF7",
+      color = NA
+    ),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_line(
+      color = "#E8DAD7",
+      linewidth = 0.4
+    ),
+    plot.title = element_text(
+      color = "#355070",
+      face = "bold",
+      size = 15
+    ),
+    plot.subtitle = element_text(
+      color = "#6D597A",
+      size = 10
+    ),
+    axis.text = element_text(
+      color = "#355070",
+      size = 9
+    ),
+    axis.title.x = element_text(
+      color = "#355070",
+      face = "bold",
+      size = 10
+    ),
+    legend.position = "bottom"
+  )
+
+p_dumbbell_plotly <- plotly::ggplotly(
+  p_dumbbell,
+  tooltip = "text"
+) |>
+  htmlwidgets::onRender("
+    function(el, x) {
+      var gd = document.getElementById(el.id);
+
+      var originalSizes = gd.data.map(function(trace) {
+        if (!trace.marker) return null;
+        return Array.isArray(trace.marker.size)
+          ? trace.marker.size.slice()
+          : (trace.marker.size || 10);
+      });
+
+      var originalColors = gd.data.map(function(trace) {
+        return trace.marker ? trace.marker.color : null;
+      });
+
+      var busy = false;
+
+      function resetPoints() {
+        if (busy) return;
+        gd.data.forEach(function(trace, i) {
+          if (!trace.marker || originalSizes[i] === null) return;
+          Plotly.restyle(gd, {
+            'marker.size': [originalSizes[i]]
+          }, [i]);
+        });
+
+        gd.querySelectorAll('.scatterlayer .trace path').forEach(function(node) {
+          node.style.filter = 'none';
+          node.style.transition = 'filter 450ms ease';
+        });
+      }
+
+      gd.on('plotly_hover', function(e) {
+        if (!e.points || !e.points.length || busy) return;
+
+        var point = e.points[0];
+        var targetColor = originalColors[point.curveNumber];
+
+        gd.data.forEach(function(trace, i) {
+          if (!trace.marker || originalSizes[i] === null) return;
+
+          var sameColor = originalColors[i] === targetColor;
+          var size = originalSizes[i];
+
+          var newSize = Array.isArray(size)
+            ? size.map(function(s) {
+                return sameColor ? s * 1.12 : s;
+              })
+            : size * (sameColor ? 1.12 : 1);
+
+          Plotly.restyle(gd, {
+            'marker.size': [newSize]
+          }, [i]);
+        });
+
+        gd.querySelectorAll('.scatterlayer .trace').forEach(function(trace, i) {
+          trace.querySelectorAll('.points path').forEach(function(node) {
+            node.style.transition = 'filter 450ms ease';
+            node.style.filter =
+              originalColors[i] === targetColor
+                ? 'drop-shadow(0 0 5px rgba(102, 84, 119, 0.65))'
+                : 'none';
+          });
+        });
+      });
+
+      gd.on('plotly_unhover', resetPoints);
+    }
+  ") |>
+  layout(
+    title = list(
+      text = paste0(
+        '<b>Employment Outcomes by Educational Attainment</b>',
+        '<br><span style=\"font-size:12px;color:#6D597A\">With vs without a non-school qualification</span>'
+      ),
+      x = 0,
+      xanchor = 'left',
+      y = 0.94,
+      yanchor = 'top',
+      font = list(
+        family = 'Arial',
+        size = 17,
+        color = '#355070'
+      )
+    ),
+    xaxis = list(
+      title = list(
+        text = 'Proportion (%)',
+        font = list(size = 11, color = '#355070')
+      ),
+      tickfont = list(size = 10, color = '#355070'),
+      range = c(0, 100),
+      dtick = 20,
+      automargin = TRUE,
+      gridcolor = '#E8DAD7',
+      zeroline = FALSE
+    ),
+    yaxis = list(
+      title = list(text = ''),
+      tickfont = list(size = 10, color = '#355070'),
+      automargin = TRUE
+    ),
+    legend = list(
+      orientation = 'h',
+      x = 0.5,
+      xanchor = 'center',
+      y = -0.20,
+      font = list(size = 10, color = '#355070')
+    ),
+    paper_bgcolor = '#FFFAF7',
+    plot_bgcolor = '#FFFAF7',
+    margin = list(t = 75, b = 70, l = 135, r = 25),
+    hoverlabel = list(
+      bgcolor = '#FFFAF7',
+      bordercolor = '#C4A7B5',
+      font = list(
+        family = 'Arial',
+        size = 12,
+        color = '#355070'
+      ),
+      align = 'left'
+    )
+  )
+```
+
+
+
+```{r Stacked Chart Preparation Tab 3 }
+IJK_period <- IJK_gap |>
+  dplyr::mutate(
+    Period = dplyr::case_when(
+      Year >= 2016 & Year <= 2017 ~ "2016–2017",
+      Year >= 2018 & Year <= 2019 ~ "2018–2019",
+      Year >= 2020 & Year <= 2021 ~ "2020–2021",
+      Year >= 2022 & Year <= 2023 ~ "2022–2023",
+      Year >= 2024 & Year <= 2025 ~ "2024–2025"
+    )
+  ) |>
+  dplyr::group_by(Period, Course.Type) |>
+  dplyr::summarise(
+    Domestic = mean(Domestic, na.rm = TRUE),
+    International = mean(International, na.rm = TRUE),
+    Employment_Gap = mean(Employment_Gap, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  dplyr::mutate(
+    Period = factor(
+      Period,
+      levels = c(
+        "2016–2017",
+        "2018–2019",
+        "2020–2021",
+        "2022–2023",
+        "2024–2025"
+      )
+    )
+  )
+
+IJK_undergrad <- IJK_period |>
+  dplyr::filter(Course.Type == "Undergraduate") |>
+  dplyr::mutate(
+    Period = factor(
+      Period,
+      levels = c(
+        "2016–2017",
+        "2018–2019",
+        "2020–2021",
+        "2022–2023",
+        "2024–2025"
+      )
+    )
+  )
+
+IJK_undergrad_long <- IJK_undergrad |>
+  tidyr::pivot_longer(
+    cols = c(International, Employment_Gap),
+    names_to = "Component",
+    values_to = "Rate"
+  ) |>
+  dplyr::mutate(
+    Component = factor(
+      Component,
+      levels = c("Employment_Gap", "International"),
+  labels = c("Employment Gap", "International")
+    )
+  )
+
+IJK_postgrad <- IJK_period |>
+  dplyr::filter(Course.Type == "Postgraduate Coursework")
+
+IJK_research <- IJK_period |>
+  dplyr::filter(Course.Type == "Postgraduate Research")
+
+IJK_postgrad_long <- IJK_postgrad |>
+  tidyr::pivot_longer(
+    cols = c(International, Employment_Gap),
+    names_to = "Component",
+    values_to = "Rate"
+  ) |>
+  dplyr::mutate(
+    Component = factor(
+      Component,
+      levels = c("Employment_Gap", "International"),
+      labels = c("Employment Gap", "International")
+    )
+  )
+
+IJK_research_long <- IJK_research |>
+  tidyr::pivot_longer(
+    cols = c(International, Employment_Gap),
+    names_to = "Component",
+    values_to = "Rate"
+  ) |>
+  dplyr::mutate(
+    Component = factor(
+      Component,
+      levels = c("Employment_Gap", "International"),
+      labels = c("Employment Gap", "International")
+    )
+  )
+```
+
+```{r Postgrad & Research Dealing}
+# Postgraduate Coursework
+p_postgrad <- ggplot(
+  IJK_postgrad_long,
+  aes(x = Period, y = Rate, fill = Component)
+) +
+  geom_col(
+    width = 0.58,
+    color = "#FFFAF7",
+    linewidth = 0.8
+  ) +
+  geom_text(
+    aes(label = sprintf("%.1f", Rate)),
+    position = position_stack(vjust = 0.5),
+    color = "#FFFAF7",
+    fontface = "bold",
+    size = 3.2
+  ) +
+  geom_text(
+    data = IJK_postgrad,
+    aes(
+      x = Period,
+      y = Domestic,
+      label = sprintf("%.1f%%", Domestic)
+    ),
+    inherit.aes = FALSE,
+    vjust = -0.65,
+    color = "#355070",
+    fontface = "bold",
+    size = 3.6
+  ) +
+  scale_fill_manual(
+    values = c(
+      "International" = "#665477",
+      "Employment Gap" = "#C4A7B5"
+    ),
+    breaks = c("International", "Employment Gap")
+  ) +
+  scale_y_continuous(
+    breaks = seq(0, 100, 20),
+    limits = c(0, 100),
+    expand = expansion(mult = c(0, 0.02))
+  ) +
+  labs(
+    title = "Postgraduate Coursework Employment Rates",
+    subtitle = "International employment rate + gap to domestic graduates",
+    x = NULL,
+    y = "Employment rate (%)",
+    fill = NULL
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    plot.background = element_rect(fill = "#FFFAF7", colour = NA),
+    panel.background = element_rect(fill = "#FFFAF7", colour = NA),
+    plot.title = element_text(color = "#355070", face = "bold", size = 15),
+    plot.subtitle = element_text(color = "#6D597A", size = 9.5),
+    axis.text = element_text(color = "#355070", size = 9),
+    axis.title.y = element_text(color = "#355070", face = "bold", size = 10),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_line(color = "#E8DAD7", linewidth = 0.4),
+    legend.position = "bottom",
+    legend.text = element_text(color = "#355070", size = 9),
+    plot.margin = margin(12, 16, 8, 10)
+  )
+
+
+# Postgraduate Research
+p_research <- ggplot(
+  IJK_research_long,
+  aes(x = Period, y = Rate, fill = Component)
+) +
+  geom_col(
+    width = 0.58,
+    color = "#FFFAF7",
+    linewidth = 0.8
+  ) +
+  geom_text(
+    aes(label = sprintf("%.1f", Rate)),
+    position = position_stack(vjust = 0.5),
+    color = "#FFFAF7",
+    fontface = "bold",
+    size = 3.2
+  ) +
+  geom_text(
+    data = IJK_research,
+    aes(
+      x = Period,
+      y = Domestic,
+      label = sprintf("%.1f%%", Domestic)
+    ),
+    inherit.aes = FALSE,
+    vjust = -0.65,
+    color = "#355070",
+    fontface = "bold",
+    size = 3.6
+  ) +
+  scale_fill_manual(
+    values = c(
+      "International" = "#665477",
+      "Employment Gap" = "#C4A7B5"
+    ),
+    breaks = c("International", "Employment Gap")
+  ) +
+  scale_y_continuous(
+    breaks = seq(0, 100, 20),
+    limits = c(0, 100),
+    expand = expansion(mult = c(0, 0.02))
+  ) +
+  labs(
+    title = "Postgraduate Research Employment Rates",
+    subtitle = "International employment rate + gap to domestic graduates",
+    x = NULL,
+    y = "Employment rate (%)",
+    fill = NULL
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    plot.background = element_rect(fill = "#FFFAF7", colour = NA),
+    panel.background = element_rect(fill = "#FFFAF7", colour = NA),
+    plot.title = element_text(color = "#355070", face = "bold", size = 15),
+    plot.subtitle = element_text(color = "#6D597A", size = 9.5),
+    axis.text = element_text(color = "#355070", size = 9),
+    axis.title.y = element_text(color = "#355070", face = "bold", size = 10),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_line(color = "#E8DAD7", linewidth = 0.4),
+    legend.position = "bottom",
+    legend.text = element_text(color = "#355070", size = 9),
+    plot.margin = margin(12, 16, 8, 10)
+  )
+
+```
+
+```{r p_undergrad_plotly Creation Tab 3}
+p_undergrad <- ggplot(
+  IJK_undergrad_long,
+  aes(
+    x = Period,
+    y = Rate,
+    fill = Component
+  )
+) +
+  geom_col(
+    width = 0.58,
+    color = "#FFFAF7",
+    linewidth = 0.8
+  ) +
+  # Values inside both stacked sections
+  geom_text(
+    aes(label = sprintf("%.1f", Rate)),
+    position = position_stack(vjust = 0.5),
+    color = "#FFFAF7",
+    fontface = "bold",
+    size = 3.2
+  ) +
+  # Domestic total above each column
+  geom_text(
+    data = IJK_undergrad,
+    aes(
+      x = Period,
+      y = Domestic,
+      label = sprintf("%.1f%%", Domestic)
+    ),
+    inherit.aes = FALSE,
+    vjust = -0.65,
+    color = "#355070",
+    fontface = "bold",
+    size = 3.6
+  ) +
+  scale_fill_manual(
+    values = c(
+     "International" = "#665477",
+    "Employment Gap" = "#C4A7B5"
+    ),
+    breaks = c("International", "Employment Gap")
+  ) +
+  scale_y_continuous(
+    breaks = seq(0, 100, 20),
+    limits = c(0, 95),
+    expand = expansion(mult = c(0, 0.02))
+  ) +
+  labs(
+    title = "Undergraduate Employment Rates",
+    subtitle = "International employment rate + gap to domestic graduates",
+    x = NULL,
+    y = "Employment rate (%)",
+    fill = NULL
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    plot.background = element_rect(
+      fill = "#FFFAF7", colour = NA
+    ),
+    panel.background = element_rect(
+      fill = "#FFFAF7", colour = NA
+    ),
+    plot.title = element_text(
+      color = "#355070",
+      face = "bold",
+      size = 15
+    ),
+    plot.subtitle = element_text(
+      color = "#6D597A",
+      size = 9.5
+    ),
+    axis.text = element_text(
+      color = "#355070",
+      size = 9
+    ),
+    axis.title.y = element_text(
+      color = "#355070",
+      face = "bold",
+      size = 10
+    ),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_line(
+      color = "#E8DAD7",
+      linewidth = 0.4
+    ),
+    legend.position = "bottom",
+    legend.text = element_text(
+      color = "#355070",
+      size = 9
+    ),
+    plot.margin = margin(12, 16, 8, 10)
+  )
+
+p_undergrad_plotly <- ggplotly(
+  p_undergrad,
+  tooltip = "none"
+) |>
+ htmlwidgets::onRender("
+    function(el, x) {
+      var gd = document.getElementById(el.id);
+      var svg = gd.querySelector('svg.main-svg');
+      if (!svg) return;
+
+      var ns = 'http://www.w3.org/2000/svg';
+      var defs = svg.querySelector('defs');
+
+      if (!defs) {
+        defs = document.createElementNS(ns, 'defs');
+        svg.insertBefore(defs, svg.firstChild);
+      }
+
+      // Remove previous filter if this widget is re-rendered
+      var old = svg.querySelector('#undergradGlowStrong');
+      if (old) old.remove();
+
+      // Layered mauve glow
+      var filter = document.createElementNS(ns, 'filter');
+      filter.setAttribute('id', 'undergradGlowStrong');
+      filter.setAttribute('x', '-100%');
+      filter.setAttribute('y', '-60%');
+      filter.setAttribute('width', '300%');
+      filter.setAttribute('height', '220%');
+      filter.setAttribute('color-interpolation-filters', 'sRGB');
+
+      var blur1 = document.createElementNS(ns, 'feGaussianBlur');
+      blur1.setAttribute('in', 'SourceGraphic');
+      blur1.setAttribute('stdDeviation', '3');
+      blur1.setAttribute('result', 'blur1');
+
+      var color1 = document.createElementNS(ns, 'feFlood');
+      color1.setAttribute('flood-color', '#C4A7B5');
+      color1.setAttribute('flood-opacity', '0.95');
+      color1.setAttribute('result', 'glowColor1');
+
+      var comp1 = document.createElementNS(ns, 'feComposite');
+      comp1.setAttribute('in', 'glowColor1');
+      comp1.setAttribute('in2', 'blur1');
+      comp1.setAttribute('operator', 'in');
+      comp1.setAttribute('result', 'glow1');
+
+      var blur2 = document.createElementNS(ns, 'feGaussianBlur');
+      blur2.setAttribute('in', 'SourceGraphic');
+      blur2.setAttribute('stdDeviation', '6');
+      blur2.setAttribute('result', 'blur2');
+
+      var color2 = document.createElementNS(ns, 'feFlood');
+      color2.setAttribute('flood-color', '#DCC6D5');
+      color2.setAttribute('flood-opacity', '0.55');
+      color2.setAttribute('result', 'glowColor2');
+
+      var comp2 = document.createElementNS(ns, 'feComposite');
+      comp2.setAttribute('in', 'glowColor2');
+      comp2.setAttribute('in2', 'blur2');
+      comp2.setAttribute('operator', 'in');
+      comp2.setAttribute('result', 'glow2');
+
+      var merge = document.createElementNS(ns, 'feMerge');
+
+      ['glow2', 'glow1', 'SourceGraphic'].forEach(function(input) {
+        var node = document.createElementNS(ns, 'feMergeNode');
+        node.setAttribute('in', input);
+        merge.appendChild(node);
+      });
+
+      filter.appendChild(blur1);
+      filter.appendChild(color1);
+      filter.appendChild(comp1);
+      filter.appendChild(blur2);
+      filter.appendChild(color2);
+      filter.appendChild(comp2);
+      filter.appendChild(merge);
+      defs.appendChild(filter);
+
+      function groupName(name) {
+        name = (name || '').toLowerCase();
+
+        if (name.indexOf('international') >= 0) return 'international';
+        if (name.indexOf('employment gap') >= 0 ||
+            name.indexOf('employment_gap') >= 0) return 'gap';
+
+        return null;
+      }
+
+      function setBars(group) {
+        gd.querySelectorAll('.barlayer .trace').forEach(function(trace) {
+          var traces = Array.from(trace.parentNode.children);
+          var index = traces.indexOf(trace);
+          var data = gd.data[index];
+          var currentGroup = groupName(data && data.name);
+          var selected = group && currentGroup === group;
+
+          trace.querySelectorAll('path').forEach(function(bar) {
+            bar.style.transition =
+              'opacity 420ms cubic-bezier(0.22, 1, 0.36, 1), ' +
+              'filter 420ms cubic-bezier(0.22, 1, 0.36, 1)';
+
+            if (selected) {
+              bar.style.opacity = '1';
+              bar.style.filter = 'url(#undergradGlowStrong)';
+            } else if (group && currentGroup) {
+              bar.style.opacity = '0.20';
+              bar.style.filter = 'none';
+            } else {
+              bar.style.opacity = '1';
+              bar.style.filter = 'none';
+            }
+          });
+        });
+      }
+
+      gd.on('plotly_hover', function(eventData) {
+        if (!eventData.points || !eventData.points.length) return;
+
+        var group = groupName(eventData.points[0].data.name);
+        if (group) setBars(group);
+      });
+
+      gd.on('plotly_unhover', function() {
+        setBars(null);
+      });
+    }
+  ")
+
+p_undergrad_plotly <- p_undergrad_plotly |>
+  layout(
+    title = list(
+      text = paste0(
+        "Undergraduate Employment Rates",
+        "<br><sup>International employment rate + gap to domestic graduates</sup>"
+      ),
+      x = 0,
+      xanchor = "left",
+      font = list(
+        family = "Arial",
+        size = 18,
+        color = "#355070"
+      )
+    ),
+    xaxis = list(
+      title = list(text = ""),
+      tickfont = list(size = 10, color = "#355070"),
+      automargin = TRUE
+    ),
+    yaxis = list(
+      title = list(
+        text = "Employment rate (%)",
+        font = list(size = 10, color = "#355070")
+      ),
+      tickfont = list(size = 9, color = "#355070"),
+      automargin = TRUE
+    ),
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.18,
+      font = list(size = 9, color = "#355070")
+    ),
+    margin = list(t = 85, b = 65, l = 55, r = 20)
+  )
+
+
+```
+
+```{r p_postgrad_plotly Creation Tab 3}
+p_postgrad_plotly <- ggplotly(
+  p_postgrad,
+  tooltip = "none"
+) |>
+  htmlwidgets::onRender("
+    function(el, x) {
+      var gd = document.getElementById(el.id);
+      var svg = gd.querySelector('svg.main-svg');
+      if (!svg) return;
+
+      var ns = 'http://www.w3.org/2000/svg';
+      var defs = svg.querySelector('defs');
+
+      if (!defs) {
+        defs = document.createElementNS(ns, 'defs');
+        svg.insertBefore(defs, svg.firstChild);
+      }
+
+      var filter = document.createElementNS(ns, 'filter');
+      filter.setAttribute('id', 'postgradGlow');
+      filter.setAttribute('x', '-100%');
+      filter.setAttribute('y', '-60%');
+      filter.setAttribute('width', '300%');
+      filter.setAttribute('height', '220%');
+      filter.setAttribute('color-interpolation-filters', 'sRGB');
+
+      var blur1 = document.createElementNS(ns, 'feGaussianBlur');
+      blur1.setAttribute('in', 'SourceGraphic');
+      blur1.setAttribute('stdDeviation', '3');
+      blur1.setAttribute('result', 'blur1');
+
+      var color1 = document.createElementNS(ns, 'feFlood');
+      color1.setAttribute('flood-color', '#C4A7B5');
+      color1.setAttribute('flood-opacity', '0.95');
+      color1.setAttribute('result', 'glowColor1');
+
+      var comp1 = document.createElementNS(ns, 'feComposite');
+      comp1.setAttribute('in', 'glowColor1');
+      comp1.setAttribute('in2', 'blur1');
+      comp1.setAttribute('operator', 'in');
+      comp1.setAttribute('result', 'glow1');
+
+      var blur2 = document.createElementNS(ns, 'feGaussianBlur');
+      blur2.setAttribute('in', 'SourceGraphic');
+      blur2.setAttribute('stdDeviation', '6');
+      blur2.setAttribute('result', 'blur2');
+
+      var color2 = document.createElementNS(ns, 'feFlood');
+      color2.setAttribute('flood-color', '#DCC6D5');
+      color2.setAttribute('flood-opacity', '0.55');
+      color2.setAttribute('result', 'glow2color');
+
+      var comp2 = document.createElementNS(ns, 'feComposite');
+      comp2.setAttribute('in', 'glow2color');
+      comp2.setAttribute('in2', 'blur2');
+      comp2.setAttribute('operator', 'in');
+      comp2.setAttribute('result', 'glow2');
+
+      var merge = document.createElementNS(ns, 'feMerge');
+
+      ['glow2', 'glow1', 'SourceGraphic'].forEach(function(input) {
+        var node = document.createElementNS(ns, 'feMergeNode');
+        node.setAttribute('in', input);
+        merge.appendChild(node);
+      });
+
+      filter.appendChild(blur1);
+      filter.appendChild(color1);
+      filter.appendChild(comp1);
+      filter.appendChild(blur2);
+      filter.appendChild(color2);
+      filter.appendChild(comp2);
+      filter.appendChild(merge);
+      defs.appendChild(filter);
+
+      function groupName(name) {
+        name = (name || '').toLowerCase();
+        if (name.indexOf('international') >= 0) return 'international';
+        if (name.indexOf('employment gap') >= 0 ||
+            name.indexOf('employment_gap') >= 0) return 'gap';
+        return null;
+      }
+
+      function setBars(group) {
+        gd.querySelectorAll('.barlayer .trace').forEach(function(trace) {
+          var traces = Array.from(trace.parentNode.children);
+          var index = traces.indexOf(trace);
+          var data = gd.data[index];
+          var currentGroup = groupName(data && data.name);
+          var selected = group && currentGroup === group;
+
+          trace.querySelectorAll('path').forEach(function(bar) {
+            bar.style.transition =
+              'opacity 420ms cubic-bezier(0.22, 1, 0.36, 1), ' +
+              'filter 420ms cubic-bezier(0.22, 1, 0.36, 1)';
+
+            if (selected) {
+              bar.style.opacity = '1';
+              bar.style.filter = 'url(#postgradGlow)';
+            } else if (group && currentGroup) {
+              bar.style.opacity = '0.20';
+              bar.style.filter = 'none';
+            } else {
+              bar.style.opacity = '1';
+              bar.style.filter = 'none';
+            }
+          });
+        });
+      }
+
+      gd.on('plotly_hover', function(eventData) {
+        if (!eventData.points || !eventData.points.length) return;
+        var group = groupName(eventData.points[0].data.name);
+        if (group) setBars(group);
+      });
+
+      gd.on('plotly_unhover', function() {
+        setBars(null);
+      });
+    }
+  ") |>
+  layout(
+    title = list(
+      text = paste0(
+        "Postgraduate Coursework Employment Rates",
+        "<br><sup>International employment rate + gap to domestic graduates</sup>"
+      ),
+      x = 0,
+      xanchor = "left",
+      font = list(
+        family = "Arial",
+        size = 18,
+        color = "#355070"
+      )
+    ),
+    xaxis = list(
+      title = list(text = ""),
+      tickfont = list(size = 10, color = "#355070"),
+      automargin = TRUE
+    ),
+    yaxis = list(
+      title = list(
+        text = "Employment rate (%)",
+        font = list(size = 10, color = "#355070")
+      ),
+      tickfont = list(size = 9, color = "#355070"),
+      automargin = TRUE
+    ),
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.18,
+      font = list(size = 9, color = "#355070")
+    ),
+    margin = list(t = 85, b = 65, l = 55, r = 20)
+  )
+```
+
+```{r p_research_plotly Creation Tab 3}
+p_research_plotly <- ggplotly(
+  p_research,
+  tooltip = "none"
+) |>
+  htmlwidgets::onRender("
+    function(el, x) {
+      var gd = document.getElementById(el.id);
+      var svg = gd.querySelector('svg.main-svg');
+      if (!svg) return;
+
+      var ns = 'http://www.w3.org/2000/svg';
+      var defs = svg.querySelector('defs');
+
+      if (!defs) {
+        defs = document.createElementNS(ns, 'defs');
+        svg.insertBefore(defs, svg.firstChild);
+      }
+
+      var filter = document.createElementNS(ns, 'filter');
+      filter.setAttribute('id', 'researchGlow');
+      filter.setAttribute('x', '-100%');
+      filter.setAttribute('y', '-60%');
+      filter.setAttribute('width', '300%');
+      filter.setAttribute('height', '220%');
+      filter.setAttribute('color-interpolation-filters', 'sRGB');
+
+      var blur1 = document.createElementNS(ns, 'feGaussianBlur');
+      blur1.setAttribute('in', 'SourceGraphic');
+      blur1.setAttribute('stdDeviation', '3');
+      blur1.setAttribute('result', 'blur1');
+
+      var color1 = document.createElementNS(ns, 'feFlood');
+      color1.setAttribute('flood-color', '#C4A7B5');
+      color1.setAttribute('flood-opacity', '0.95');
+      color1.setAttribute('result', 'glowColor1');
+
+      var comp1 = document.createElementNS(ns, 'feComposite');
+      comp1.setAttribute('in', 'glowColor1');
+      comp1.setAttribute('in2', 'blur1');
+      comp1.setAttribute('operator', 'in');
+      comp1.setAttribute('result', 'glow1');
+
+      var blur2 = document.createElementNS(ns, 'feGaussianBlur');
+      blur2.setAttribute('in', 'SourceGraphic');
+      blur2.setAttribute('stdDeviation', '6');
+      blur2.setAttribute('result', 'blur2');
+
+      var color2 = document.createElementNS(ns, 'feFlood');
+      color2.setAttribute('flood-color', '#DCC6D5');
+      color2.setAttribute('flood-opacity', '0.55');
+      color2.setAttribute('result', 'glowColor2');
+
+      var comp2 = document.createElementNS(ns, 'feComposite');
+      comp2.setAttribute('in', 'glowColor2');
+      comp2.setAttribute('in2', 'blur2');
+      comp2.setAttribute('operator', 'in');
+      comp2.setAttribute('result', 'glow2');
+
+      var merge = document.createElementNS(ns, 'feMerge');
+
+      ['glow2', 'glow1', 'SourceGraphic'].forEach(function(input) {
+        var node = document.createElementNS(ns, 'feMergeNode');
+        node.setAttribute('in', input);
+        merge.appendChild(node);
+      });
+
+      filter.appendChild(blur1);
+      filter.appendChild(color1);
+      filter.appendChild(comp1);
+      filter.appendChild(blur2);
+      filter.appendChild(color2);
+      filter.appendChild(comp2);
+      filter.appendChild(merge);
+      defs.appendChild(filter);
+
+      function groupName(name) {
+        name = (name || '').toLowerCase();
+        if (name.indexOf('international') >= 0) return 'international';
+        if (name.indexOf('employment gap') >= 0 ||
+            name.indexOf('employment_gap') >= 0) return 'gap';
+        return null;
+      }
+
+      function setBars(group) {
+        gd.querySelectorAll('.barlayer .trace').forEach(function(trace) {
+          var traces = Array.from(trace.parentNode.children);
+          var index = traces.indexOf(trace);
+          var data = gd.data[index];
+          var currentGroup = groupName(data && data.name);
+          var selected = group && currentGroup === group;
+
+          trace.querySelectorAll('path').forEach(function(bar) {
+            bar.style.transition =
+              'opacity 420ms cubic-bezier(0.22, 1, 0.36, 1), ' +
+              'filter 420ms cubic-bezier(0.22, 1, 0.36, 1)';
+
+            if (selected) {
+              bar.style.opacity = '1';
+              bar.style.filter = 'url(#researchGlow)';
+            } else if (group && currentGroup) {
+              bar.style.opacity = '0.20';
+              bar.style.filter = 'none';
+            } else {
+              bar.style.opacity = '1';
+              bar.style.filter = 'none';
+            }
+          });
+        });
+      }
+
+      gd.on('plotly_hover', function(eventData) {
+        if (!eventData.points || !eventData.points.length) return;
+        var group = groupName(eventData.points[0].data.name);
+        if (group) setBars(group);
+      });
+
+      gd.on('plotly_unhover', function() {
+        setBars(null);
+      });
+    }
+  ") |>
+  layout(
+    title = list(
+      text = paste0(
+        "Postgraduate Research Employment Rates",
+        "<br><sup>International employment rate + gap to domestic graduates</sup>"
+      ),
+      x = 0,
+      xanchor = "left",
+      font = list(
+        family = "Arial",
+        size = 18,
+        color = "#355070"
+      )
+    ),
+    xaxis = list(
+      title = list(text = ""),
+      tickfont = list(size = 10, color = "#355070"),
+      automargin = TRUE
+    ),
+    yaxis = list(
+      title = list(
+        text = "Employment rate (%)",
+        font = list(size = 10, color = "#355070")
+      ),
+      tickfont = list(size = 9, color = "#355070"),
+      automargin = TRUE
+    ),
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.18,
+      font = list(size = 9, color = "#355070")
+    ),
+    margin = list(t = 85, b = 65, l = 55, r = 20)
+  )
+
+```
+
+
+```{r Salary Area Chart Tab 3}
+
+salary_palette <- c(
+ "Undergraduate - International" = "#243B53",
+  "Undergraduate - Domestic" = "#8F2948",
+  "Postgraduate Coursework - International" = "#527A9D",
+  "Postgraduate Coursework - Domestic" = "#C05A78",
+  "Postgraduate Research - International" = "#A9C3D9",
+  "Postgraduate Research - Domestic" = "#E8A4B5"
+)
+
+salary_order <- c(
+   "Postgraduate Coursework - International",
+  "Undergraduate - International",
+  "Undergraduate - Domestic",
+  "Postgraduate Research - International",
+  "Postgraduate Coursework - Domestic",
+  "Postgraduate Research - Domestic"
+)
+
+p_salary <- ggplot(salary_bands) +
+  geom_ribbon(
+    aes(
+    x = Year,
+    ymin = pmax(ymin, 30000),
+    ymax = pmax(ymin, pmin(ymax, 110000)),
+    fill = Group,
+    group = Group
+  ),
+  alpha = 0.72,
+  colour = NA
+  ) +
+  geom_line(
+    aes(x = Year, y = Salary, colour = Group),
+    linewidth = 1.5,
+    alpha = 1
+  ) +
+ scale_fill_manual(
+  values = salary_palette,
+   breaks = salary_order
+) +
+scale_colour_manual(
+  values = salary_palette,
+  breaks = salary_order
+) +
+  scale_x_continuous(
+    breaks = 2016:2025,
+    expand = expansion(mult = c(0, 0.01))
+  ) +
+  scale_y_continuous(
+     limits = c(30000, 110000),
+  breaks = seq(30000, 110000, by = 10000),
+  labels = scales::label_dollar(
+    prefix = "$",
+    big.mark = ",",
+    accuracy = 1000
+    ),
+    expand = expansion(mult = c(0, 0.04))
+  ) +
+  labs(
+    title = "Graduate Salary Trends",
+    subtitle = "Domestic and international graduates by course type, 2016–2025",
+    x = NULL,
+    y = "Annual salary",
+    fill = NULL,
+    colour = NULL
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    plot.background = element_rect(fill = "#FFFAF7", colour = NA),
+    panel.background = element_rect(fill = "#FFFAF7", colour = NA),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_line(
+      colour = "#E8DAD7",
+      linewidth = 0.4
+    ),
+    axis.text = element_text(colour = "#52606D"),
+    axis.title.y = element_text(colour = "#355070"),
+    plot.title = element_text(
+      colour = "#355070",
+      face = "bold",
+      size = 16
+    ),
+    plot.subtitle = element_text(colour = "#6D597A"),
+    legend.position = "bottom",
+    legend.text = element_text(size = 8),
+    legend.key.width = grid::unit(1.2, "cm"),
+    plot.margin = margin(12, 16, 8, 8)
+  )
+
+
+p_salary_interactive <- ggplotly(
+  p_salary,
+  tooltip = c("x", "y", "colour")
+) |>
+   layout(
+    title = list(
+      text = paste0(
+        "<b>Graduate Salary Trends</b>",
+        "<br><sup>Annual salary by degree level and residency, 2016–2025</sup>"
+      ),
+      x = 0,
+      xanchor = "left",
+      font = list(
+        family = "Arial",
+        size = 20,
+        color = "#355070"
+      ),
+      y = 0.94,
+      yanchor = "top"
+    ),
+
+    xaxis = list(
+      title = "",
+      tickmode = "linear",
+      dtick = 1,
+      tickfont = list(size = 10, color = "#52606D"),
+      showgrid = FALSE,
+      zeroline = FALSE,
+      automargin = TRUE
+    ),
+
+    yaxis = list(
+      title = list(
+        text = "Annual salary (AUD)",
+        font = list(size = 12, color = "#355070")
+      ),
+      tickfont = list(size = 10, color = "#52606D"),
+      tickformat = "$,.0f",
+      separatethousands = TRUE,
+      gridcolor = "#E8DAD7",
+      gridwidth = 0.5,
+      zeroline = FALSE,
+      automargin = TRUE
+    ),
+
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.22,
+      yanchor = "top",
+      font = list(size = 10, color = "#52606D"),
+      tracegroupgap = 4
+    ),
+
+    hovermode = "closest",
+    hoverdistance = 10,
+
+    paper_bgcolor = "#FFFAF7",
+    plot_bgcolor = "#FFFAF7",
+
+    margin = list(
+      t = 100,
+      r = 25,
+      b = 115,
+      l = 85
+    )
+  )
+
+p_salary_interactive <- htmlwidgets::onRender(
+  p_salary_interactive,
+"
+  function(el, x) {
+    const gd = document.getElementById(el.id);
+
+    function setupGlow() {
+      const svg = gd.querySelector('.main-svg');
+      if (!svg) return;
+
+      let defs = svg.querySelector('defs');
+      if (!defs) {
+        defs = document.createElementNS(
+          'http://www.w3.org/2000/svg', 'defs'
+        );
+        svg.prepend(defs);
+      }
+
+      if (!svg.querySelector('#salaryGlow')) {
+        const filter = document.createElementNS(
+          'http://www.w3.org/2000/svg', 'filter'
+        );
+        filter.setAttribute('id', 'salaryGlow');
+        filter.setAttribute('x', '-60%');
+        filter.setAttribute('y', '-60%');
+        filter.setAttribute('width', '220%');
+        filter.setAttribute('height', '220%');
+
+        const blur = document.createElementNS(
+          'http://www.w3.org/2000/svg', 'feGaussianBlur'
+        );
+        blur.setAttribute('stdDeviation', '4');
+        blur.setAttribute('result', 'blur');
+
+        const merge = document.createElementNS(
+          'http://www.w3.org/2000/svg', 'feMerge'
+        );
+
+        ['blur', 'SourceGraphic'].forEach(name => {
+          const node = document.createElementNS(
+            'http://www.w3.org/2000/svg', 'feMergeNode'
+          );
+          node.setAttribute('in', name);
+          merge.appendChild(node);
+        });
+
+        filter.appendChild(blur);
+        filter.appendChild(merge);
+        defs.appendChild(filter);
+      }
+
+      gd.querySelectorAll('.scatterlayer .trace .js-line')
+        .forEach(line => {
+          // Lưu độ dày gốc duy nhất một lần
+          if (!line.dataset.originalWidth) {
+            line.dataset.originalWidth =
+              line.style.strokeWidth ||
+              line.getAttribute('stroke-width') ||
+              '2';
+          }
+
+          if (line.dataset.glowReady) return;
+          line.dataset.glowReady = '1';
+
+          const originalWidth = line.dataset.originalWidth;
+
+          line.style.transition =
+            'stroke-width 220ms ease, filter 220ms ease';
+          line.style.pointerEvents = 'stroke';
+
+          line.addEventListener('mouseenter', function() {
+            line.style.filter = 'url(#salaryGlow)';
+            line.style.strokeWidth =
+              (parseFloat(originalWidth) + 1.5) + 'px';
+          });
+
+          line.addEventListener('mouseleave', function() {
+            line.style.filter = 'none';
+            line.style.strokeWidth = originalWidth;
+          });
+        });
+    }
+
+    setupGlow();
+    gd.on('plotly_afterplot', setupGlow);
+  }
+  "
+)
+```
+
+
+
+
+
+
+
+
+
+# Student Enrollments
+
+##  {width="55%"}
+
+```{r Australia Map Chart}
+#| title: Student Map
+p_map_plotly
+```
+
+##  {width="45%"}
+
+### {height="20%"}
+
+```{r Average Value Box}
+#| content: valuebox
+#| title: Average Enrolments
+#| color: "#E8EAF0"
+#| icon: people-fill
+
+list(
+  value = format(round(mean(A$Average)), big.mark = ",")
+)
+```
+
+```{r Highest Value Box}
+#| content: valuebox
+#| title: Highest Enrolments
+#| color: "#F5E6E9"
+#| icon: graph-up-arrow
+
+list(
+  value = format(round(max(A$Average)), big.mark = ",")
+)
+```
+
+```{r Lowest Value Box}
+#| content: valuebox
+#| title: Lowest Enrolments
+#| color: "#F8EBDD"
+#| icon: graph-down-arrow
+
+list(
+  value = format(round(min(A$Average)), big.mark = ",")
+)
+```
+
+### {height=80%}
+
+::: {.panel-tabset}
+
+#### by States (Both)
+
+```{r Rank Bar Chart}
+p_rankbar_plotly
+```
+
+#### by Country of Origin (International)
+
+```{r Treemap Chart}
+p_tree
+```
+
+:::
+
+
+# Education Accessibilities & Equity
+
+## {width=50%}
+
+### {height=60%}
+
+```{r Dodge Bar Chart}
+#| title: Participation Rates by Equity Group
+p_dodge_plotly
+```
+
+
+### {height=40%}
+
+```{r Colored Table}
+#| title: Education Statistics by Equity Group
+p_table
+```
+
+## {width=50%}
+
+::: {.panel-tabset}
+
+### Access Rates
+
+```{r Heatmap Chart}
+#| fig-height: 10
+p_heat_plotly
+```
+
+### Retention Rates
+
+```{r Line Chart}
+#| fig-height: 10
+p_line_plotly
+```
+
+### Success Rates
+
+```{r Apple Watch Chart}
+#| fig-height: 7
+#| fig-width: 10
+p_ring
+```
+
+:::
+
+
+# Education Future Opportunities
+
+## {width=55%}
+
+### {height=20%}
+
+```{r Employment Value Box}
+#| content: valuebox
+#| title: Graduate Employment Rate
+#| color: "#E8E6EF"
+#| icon: briefcase-fill
+
+list(
+  value = "86.9%"
+)
+```
+
+```{r Salary Value Box}
+#| content: valuebox
+#| title: Graduate Median salary
+#| color: "#F2E3E8"
+#| icon: cash-stack
+
+list(
+  value = "A$75,000"
+)
+```
+
+```{r Satisfaction Value Box}
+#| content: valuebox
+#| title: Graduate Satisfaction
+#| color: "#F8E8E3"
+#| icon: heart-fill
+
+list(
+  value = "74.9%"
+)
+```
+
+### {height=80%}
+
+::: {.panel-tabset}
+
+#### Undergraduate 
+
+```{r Undergraduate Chart}
+p_undergrad_plotly
+```
+
+#### Postgraduate 
+
+```{r Postgraduate Chart}
+p_postgrad_plotly
+```
+
+#### Postgraduate Research
+
+```{r Postgraduate Reasearch Chart}
+p_research_plotly
+```
+
+:::
+
+
+## {width=45%}
+
+::: {.panel-tabset}
+
+### Employment Opportunities 
+
+```{r Dumbbell Chart}
+#| fig-height: 6
+p_dumbbell_plotly
+```
+
+### Median Annual Salaries
+
+```{r Salary Area Chart}
+#| fig-height: 6
+p_salary_interactive
+```
+
+:::
+
+# Data Source & Statistic
+
+## Overview {.sidebar}
+
+**Overview**
+
+---
+
+This dashboard presents statistics and Data on education in Australia.
+
+---
+
+**Coverage**
+
+States and Territories: 8  
+Study Period: 2016 – 2025
+
+---
+
+**Key Concepts**
+
+**Educational Inequality**: Differences in access to educational opportunities and resources across student groups.
+
+**Educational Quality**: The quality of learning experiences and educational outcomes.
+
+**Educational Outcomes**: The achievements and opportunities students gain through education.
+
+---
+
+**Data Source**
+
+**Higher Education Student Data**
+
+[Department of Education — 2024 Student Data](https://www.education.gov.au/higher-education-statistics/student-data/selected-higher-education-statistics-2024-student-data)
+
+**Education and Work**
+
+[Australian Bureau of Statistics — May 2025](https://www.abs.gov.au/statistics/people/education/education-and-work-australia/may-2025#data-downloads)
+
+**Graduate Outcomes & Student Experience**
+
+[QILT Resources](https://www.qilt.edu.au/resources)
+
+---
+
+
+## {width=60%}
+
+::: {.panel-tabset}
+
+### Student Number Table
+
+```{r}
+#| fig-height: 5
+t_student
+```
+
+### Employment Rate Table
+
+```{r}
+#| fig-height: 5
+t_employment
+```
+
+### Educational Attainment Table
+
+```{r}
+#| fig-height: 5
+t_attainment
+```
+
+### Graduate Salary Table (AUD '000)
+
+```{r}
+#| fig-height: 5
+t_salary
+```
+
+:::
+
+## {width=40%}
+
+### {height=50%}
+
+```{r Donut Chart}
+#| title: Educational Attainment Distribution (2025)
+p_donut_plotly
+```
+
+### {height=50%}
+
+```{r Spider Chart}
+#| title: Higher Education Across States (2025)
+par(mar = c(0, 0, 0, 0),
+    bg = "#FFFAF7")
+
+radarchart(
+  G_spider_plot,
+  axistype = 1,
+  seg = 5,
+
+  # Muted Berry palette
+  pcol = "#B56576",
+  pfcol = scales::alpha("#B56576", 0.18),
+  plwd = 2,
+
+  # Subtle grid and labels
+  cglcol = "#E8DAD7",
+  cglty = 1,
+  cglwd = 0.6,
+  axislabcol = "#52606D",
+  caxislabels = c("300", "720", "1140", "1560", "1980", "2400"),
+  vlcex = 0.8
+)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

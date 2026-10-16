@@ -1,0 +1,136 @@
+---
+title: "EducationDataViz Dashboard"
+author: "Trvscape"
+format: dashboard
+editor: visual
+orientation: columns
+---
+
+```{r library}
+library(tidyverse)
+library(readxl)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(pak)
+library(rnaturalearthhires)
+```
+
+```{r Import CSV}
+A <-  read.csv("A.csv")
+```
+
+
+
+```{r Map Preparation}
+aus <- rnaturalearth::ne_states(
+  country = "Australia",
+  returnclass = "sf"
+)
+aus <- aus |>
+  filter(name %in% c(
+    "New South Wales",
+    "Victoria",
+    "Queensland",
+    "Western Australia",
+    "South Australia",
+    "Tasmania",
+    "Northern Territory",
+    "Australian Capital Territory"
+  ))
+A_map <- A |>
+  mutate(State = trimws(gsub("\u00A0", " ", State))) |>
+  filter(State != "Multi-State")
+
+aus_map <- aus |>
+  left_join(A_map, by = c("name" = "State"))
+```
+
+```{r Rank Bar Chart Tab 1 Creation}
+p_rankbar <-  ggplot(A, aes(x = Average, y = reorder(State, Average))) +
+  geom_col(fill = "#2C7A7B") +
+  labs(
+    x = "Average Enrolments (2020–2024)",
+    y = NULL
+  ) +
+  theme_minimal()
+```
+
+```{r Australian Map Tab 1 Creation}
+p_map <-  ggplot(aus_map) +
+  geom_sf(aes(fill = Average), colour = "white") +
+  scale_fill_gradient(
+    low = "#B8D8D8",
+    high = "#243B53",
+    name = "Average Enrolments"
+  ) +
+  theme_void()
+```
+
+
+# Student Enrollments
+
+## {width=60%}
+
+```{r Australia Map Chart}
+p_map
+```
+
+## {width=40%}
+
+### {height=25%}
+
+```{r Average Value Box}
+#| content: valuebox
+#| title: Average Enrolments
+#| color: "#2C7A7B"
+#| icon: people-fill
+
+list(
+  value = format(round(mean(A$Average)), big.mark = ",")
+)
+```
+
+```{r Highest Value Box}
+#| content: valuebox
+#| title: Highest Enrolments
+#| color: "#FDE8E2"
+#| icon: trending-up
+
+list(
+  value = paste0(
+    A$State[which.max(A$Average)],
+    " (", format(round(max(A$Average)), big.mark = ","), ")"
+  )
+)
+```
+
+```{r Lowest Value Box}
+#| content: valuebox
+#| title: Lowest Enrolments
+#| color: "#E8F3F3"
+#| icon: trending-down
+
+list(
+  value = paste0(
+    A$State[which.min(A$Average)],
+    " (", format(round(min(A$Average)), big.mark = ","), ")"
+  )
+)
+```
+
+### {height=75%}
+
+```{r Rank Bar Chart}
+p_rankbar
+```
+
+
+
+
+
+
+
+
+
+

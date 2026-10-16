@@ -1,0 +1,7 @@
+"0","ggplot(A, aes(x = Average, y = reorder(State, Average))) +"
+"0","  geom_col(fill = ""#2C7A7B"") +"
+"0","  labs("
+"0","    x = ""Average Enrolments (2020–2024)"","
+"0","    y = NULL"
+"0","  ) +"
+"0","  theme_minimal()"
